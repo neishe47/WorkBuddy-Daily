@@ -6,9 +6,11 @@
 
 **WorkBuddy 成长中心 · 全能签到脚本 · 单文件自包含（含国际版每日活跃）**
 
+> 当前版本：**v49**（2026-11-13） · 最新更新：App 任务纯 Python 自动化、SSE/TLS/领取回读与隐私加固
+
 [简体中文](README.md) · [English](docs/README.en.md) · [繁體中文](docs/README.zh-Hant.md) · [日本語](docs/README.ja.md) · [한국어](docs/README.ko.md) · [Português (BR)](docs/README.pt-BR.md)
 
-🔐 Token 永续 · ✅ 38 项自动化 · 📱 小程序链式任务 · 🖥️ 桌面换血 · 🎮 8 项玩法 · 💰 三类查询 · 🎁 自动领奖 · 📊 全中文报告 · 📢 多渠道推送 · 🐧 青龙友好 · ☁️ GitHub Actions
+🔐 Token 永续 · ✅ 39 项自动化 · 📱 小程序链式任务 · 🖥️ 桌面换血 · 🎮 8 项玩法 · 💰 三类查询 · 🎁 自动领奖 · 📊 全中文报告 · 📢 多渠道推送 · 🐧 青龙友好 · ☁️ GitHub Actions
 
 <img src="https://img.shields.io/github/v/release/L0NE-6/WorkBuddy-Daily?style=for-the-badge&label=Release&color=2ea44f&logo=github" />
 <img src="https://img.shields.io/github/stars/L0NE-6/WorkBuddy-Daily?style=for-the-badge&label=Stars&color=FFC75F&logo=github" />
@@ -18,7 +20,7 @@
 <img src="https://img.shields.io/badge/License-MIT-F472B6?style=for-the-badge" />
 <a href="https://github.com/L0NE-6/WorkBuddy-Daily/releases"><img src="https://img.shields.io/badge/%E2%AC%87%20Download-Releases-2ea44f?style=for-the-badge&logo=github" /></a>
 
-[✨ 速览](#-30-秒速览) · [🚀 青龙部署](#-部署方式一青龙面板三步) · [☁️ Actions](#-部署方式二github-actions零服务器--推荐) · [🔐 登录工具](#-登录工具短信验证码获取-token) · [🔧 环境变量](#-环境变量) · [❓ 常见问题](#-常见问题) · [🚫 使用边界](#usage-policy) · [✦ 星轨](#-星轨-star-trail)
+[✨ 速览](#-30-秒速览) · [🚀 青龙部署](#-部署方式一青龙面板三步) · [☁️ Actions](#-部署方式二github-actions零服务器--推荐) · [🔐 登录工具](#-登录工具短信验证码获取-token) · [🔧 环境变量](#-环境变量) · [⏰ 定时排查](#-私有仓库--import-后定时不触发issue-43) · [🚫 使用边界](#usage-policy) · [✦ 星轨](#-星轨-star-trail)
 
 </div>
 
@@ -53,7 +55,7 @@
 
 ## ✨ 这是什么
 
-一个脚本搞定 **WorkBuddy 成长中心 + 小程序/PC 链式任务** 的全部自动化：**Token 自动续期 → 积分/用量/成长查询 → 22 项云端任务 → 6 项小程序链式任务 + 1 项 PC 灵感任务 → 8 项互动玩法 → 按进度自动补领 → 中文报告推送**，全流程无人值守，重复运行只补缺口、不重复领取。
+一个脚本搞定 **WorkBuddy 成长中心 + 小程序/PC 链式任务** 的全部自动化：**Token 自动续期 → 积分/用量/成长查询 → 23 项云端任务 → 6 项小程序链式任务 + 1 项 PC 灵感任务 → 8 项互动玩法 → 按进度自动补领 → 中文报告推送**，全流程无人值守，重复运行只补缺口、不重复领取。
 >
 > 🗂️ **活动下线就归档**：已结束/已下架的任务（开学季活动、校园日、公益专家）不再占着主脚本，代码移到 [`archive/`](archive/) 留档，主脚本保持精简。
 
@@ -82,6 +84,7 @@
 ```bash
 python workbuddy_intl_daily.py                      # 探测 + 领取 + 活跃（上报 / 保活 / 网页会话）
 python workbuddy_intl_daily.py --no-keepalive       # 只探测、领取与上报，不发保活对话与网页会话
+python workbuddy_intl_daily.py --report-only        # 只做 /v2/report 活跃上报，不探测/领取任务或奖励
 python workbuddy_intl_daily.py --only 1             # 只跑第一个账号
 ```
 
@@ -95,8 +98,9 @@ python workbuddy_intl_daily.py --only 1             # 只跑第一个账号
 > ⚠️ 国际版登录态与国内版不通用：`workbuddy.ai` 的令牌在 `copilot.tencent.com` 刷不了，反之亦然。
 >
 > 🚫 每个国际版账号在刷新 RT 和写操作前会先做一次只读状态预检；命中 `11140 / request illegal` 时明确标记为账号受限并结束该账号本轮，不继续刷新或重试。
+> 命中 `11-128 / Illegal API invocation from an unapproved channel` 时按请求内容/渠道指纹拦截处理，不刷新 Token、不重试；国内与国际版均会给出明确分类。
 > ℹ️ 保活对话出现 `HTTP 403` 通常是当前免费模型无权限，**不是账号风控**；真正的账号受限以 `11140 / request illegal` 为准，预检会直接报「账号受限」。
-> 带上 `refresh_token` 时脚本会自动续期并写回 `wb_intl_tokens.json`；只给 AT 时按短期令牌使用。
+> 带上 `refresh_token` 时脚本会自动续期，并通过线程锁 + 跨进程文件锁、锁内 CAS 与原子替换写回 `wb_intl_tokens.json`；只给 AT 时按短期令牌使用。
 > 活动未开放属于正常状态，不会当成失败；签到成功与活跃结果分开报告，任一发失败都不会把签到判成失败。
 > 活动未开启但活跃上报 / 网页会话成功时，会按「今日活跃已完成」报告（积分由上游异步发放）。
 
@@ -158,6 +162,7 @@ pip3 install requests
 | `WORKBUDDY_ACTIVITY_CHAT_FALLBACK` | ⬜ | 可选，合成活跃事件未点亮热力图时是否补一次真实对话（默认 `1`） |
 | `WORKBUDDY_BENEFIT_STATE` | ⬜ | 可选，补偿/礼包本地期次防重文件路径 |
 | `WORKBUDDY_STATE_DIR` | ⬜ | 可选，状态文件目录（`wb_refresh_tokens.json` / `WORKBUDDY_ACCESS_TOKEN.txt` / 补偿防重等）。不设＝脚本同级目录（原行为）；容器部署、脚本目录只读，或升级会覆盖脚本目录时，指向持久目录可避免轮换后的令牌库被一并替换 |
+| `WORKBUDDY_SIGN_RETRY` | ⬜ | 可选，签到瞬时失败补签状态文件路径（默认 `workbuddy_sign_retry.json`）；仅保存 UID 哈希 |
 | `WORKBUDDY_MAKEUP_MAX_PER_RUN` | ⬜ | 可选，每轮最多补签几张（默认 `1`，最高 `10`） |
 
 > 点 **New repository secret**，Name 填上面的名称，Secret 粘贴对应的值，保存。
@@ -211,7 +216,7 @@ Actions → 左侧选 **🌱 WorkBuddy Daily** → **Run workflow** → 选 `mai
 4. **60 天无活动**：GitHub 会自动停用长期无活动仓库的 `schedule`；手动运行一次或 push 一个 commit 可重新激活。
 5. **cron 是 UTC**：北京时间要减 8 小时，例如 `17 23 * * *` 是北京时间次日 07:17。
 6. **看 Actions 记录**：如果只有 `workflow_dispatch` 记录、没有 `schedule` 记录，基本就是上面 1/2/3/4 之一，不是脚本问题。
-7. **schedule 是 best-effort**：GitHub 官方不保证准点，整点前后高负载时可能延迟数分钟到数小时，甚至跳过；v3.36 默认已避开整点，但仍不能保证准点。需要精确时间请用 `workflow_dispatch` 或外部调度触发。
+7. **schedule 是 best-effort**：GitHub 官方不保证准点，整点前后高负载时可能延迟数分钟到数小时，甚至跳过；v3.40 默认已避开整点，但仍不能保证准点。需要精确时间请用 `workflow_dispatch` 或外部调度触发。
 
 ---
 
@@ -307,6 +312,7 @@ python workbuddy_login.py
 python workbuddy_daily.py                # 全流程：续期 → 查询 → 任务 → 领奖
 python workbuddy_daily.py --refresh      # 仅刷新所有账号 Token
 python workbuddy_daily.py --query        # 仅查询积分/用量/成长
+python workbuddy_daily.py --sign-retry-only # 只处理已到点的签到补签
 python workbuddy_daily.py --no-desktop   # 跳过桌面任务（非 Windows 默认走指纹上报，此参数可彻底跳过）
 python workbuddy_daily.py --only 3       # 只跑第 3 个账号
 python workbuddy_daily.py --gap 2.0      # 写动作间隔秒数（默认 1.5，最低 1.0）
@@ -368,6 +374,7 @@ python daily_forward.py daily.log --wx
 | `WORKBUDDY_ACTIVITY_CHAT_FALLBACK` | ⬜ | 可选，热力图仍为 0 时是否补一次真实对话（默认开启） |
 | `WORKBUDDY_BENEFIT_STATE` | ⬜ | 可选，补偿/礼包本地期次防重文件路径（默认 `workbuddy_benefit_state.json`） |
 | `WORKBUDDY_STATE_DIR` | ⬜ | 可选，状态文件目录（令牌库 `wb_refresh_tokens.json`、`WORKBUDDY_ACCESS_TOKEN.txt`、补偿防重等的默认落点）。不设＝脚本同级目录（原行为）；容器部署、脚本目录只读，或升级会覆盖脚本目录时，指向持久目录可避免轮换后的令牌库被一并替换 |
+| `WORKBUDDY_SIGN_RETRY` | ⬜ | 可选，签到瞬时失败补签状态文件路径（默认 `workbuddy_sign_retry.json`）；仅保存 UID 哈希，不保存凭据或用户标识 |
 | `WORKBUDDY_MAKEUP_MAX_PER_RUN` | ⬜ | 可选，每轮最多补签几张（默认 `1`，最高 `10`） |
 
 > 🎛️ **子任务开关怎么用？** 任务完成后领到的积分有**一个月有效期**，一次全领完容易放过期。
@@ -409,13 +416,13 @@ python daily_forward.py daily.log --wx
 
 ## 📦 任务清单
 
-> 单账号每轮按服务端下发逐项核对：**当前为 24 项 = 23 项自动 + 1 项需人工（关注公众号）**；脚本覆盖能力共 **38 项**（云端 22 + 小程序 6 + PC 灵感 1 + 互动玩法 8 + 每日签到 1）。
+> 单账号每轮按服务端下发逐项核对：**当前为 25 项 = 24 项自动 + 1 项需人工（关注公众号）**；脚本覆盖能力共 **45 项**（云端 23 + 小程序 7 + PC 灵感 1 + 互动玩法 8 + 每日签到 1 + 小程序活动 6）。
 >
 > 📌 另有 **微信公众号关注任务**（`wb_wechat_oa_subscribe_task`）——需真人扫码关注满 24 小时，脚本会检测并提示，不自动完成。
 >
 > 📦 **已归档**（活动结束 / 服务端已下架，代码移出主脚本 → [`archive/`](archive/)）：开学季活动（4 项 + 幸运大转盘）、校园日 `school_season`、公益专家 `Expert_Philanthropy`。
 
-### ☁️ 成长中心任务（22 项云端 · 全自动）
+### ☁️ 成长中心任务（23 项云端 · 全自动）
 
 | # | 任务 | 说明 |
 | :-: | :--- | :--- |
@@ -441,6 +448,7 @@ python daily_forward.py daily.log --wx
 | 20 | `expert_use_douyinyin` | 斗音音（抖音策略师，`ex_FbY5nlWTqDod`，v1.0.2） |
 | 21 | `expert_use_shangjia_xuanchuan` | 商家宣传设计师（商家宣传页与海报设计师，`ex_Weo3x2EZuSDm`，v1.6.0） |
 | 22 | `expert_use_bowangwang` | 播旺旺（直播电商教练，`ex_WZY136wV5aMt`，v1.0.2） |
+| 23 | `skill_share` | 官方 Open Platform 创建真实技能分享渠道 + `skill_share_channel_action` 事件链 + 进度回读 |
 | — | ~~工作台搭建师~~ | ⚠️ **服务端已下线**（脚本仍兼容，出现时会自动处理） |
 
 > 🔗 **前置条件**：`first_buddy`（领取Buddy）是其余云端任务的登记前置——服务端对**没有 Buddy 实例**的账号会拒绝这些任务的 accept（`prerequisite not met: first_buddy (no buddy instance)`）。脚本已把领养链路提到云端任务最前面，并在 accept 报前置错误时**自动补跑前置再重试登记**。
@@ -481,13 +489,34 @@ python daily_forward.py daily.log --wx
 > 💡 小程序口径任务需 `X-Client-Platform: miniprogram` 请求头才下发（查询/接受/领奖三处都要），脚本已自动处理。
 > 💡 判据上报走小程序指纹头族（`X-Client-Platform: mp-weixin` + `X-Client-Product: workbuddy-mp`），对齐官方 appservice 埋点。
 
+### 🎪 小程序活动任务（星巴克协作 / 记者节福利 · 6 项，全部自动）
+
+小程序原生活动页（`campaign_starbucks_2026` / `campaign_reporter_2026`）的任务不走成长中心，判据在活动域 `https://www.codebuddy.cn/portal/activity/*`，**完成≠到账，必须再调 `claim`**。
+
+| 活动 | 任务 | 奖励 | 判定依据 |
+| :--- | :--- | :-: | :--- |
+| 星巴克协作 | `ai_chat` 与 AI 对话 3 次 | 100 | mp `chat_request_send` × 剩余次数 |
+| 星巴克协作 | `expert` 召唤专家并对话 | 100 | mp 专家四连（含专家 `id`） |
+| 记者节福利 | `expert_chat` 体验「媒体工作助理」 | 50 | 同上，专家固定 `ex_NaiDbO06Adf3` |
+| 记者节福利 | `skill_use` 体验「采访素材整理」 | 50 | `skill_info` + `chat_request_send`（`skillId` + **slug** `interview-material-organizer`） |
+| 星巴克协作 | `app` 解锁 App 强大能力 | 100 | 建 agentos 会话 + 一次 `acp/bootstrap` 真跑完一轮对话（4 个请求） |
+| 记者节福利 | `desktop_same` 体验「内容发布排期」灵感 | 100 | 桌面域 `playbook_prompt_send` 一条，`id` 用产物目录名 `cnb-content-calendar` |
+
+> 🔑 **技能判据按 slug 认人**：`skillName` 传中文显示名（`采访素材整理`）不计数，必须传 `interview-material-organizer`；`id` 字段同值。
+> 🖼️ **页面上下文**：判据信封会并入真机埋点的 `pageURL` / `pageName`（`subpackages/secondary/starbucks-activity-428/index` / `subpackages/journalist-benefit/index`），与小程序端上报同形。
+> ⏳ **判据异步落库**：上报后先 3 秒快轮询两轮，未达标再走 10 秒慢轮询一轮；仍未落库只打印 `⏳ 判据延迟未落库` 留给下一轮补领，不判失败。
+> 🎁 **领奖**：`POST /portal/activity/tasks/<code>/claim?activity_code=<活动码>`，只有 claim 后**回读到该任务的 `claimed_at`** 才记 `+积分`（回读 4 秒 × 5 次）；未落库打印 `⚠️ 已提交但未回读到 claimed_at，下轮重试`，不把延迟入账误报成成功。
+> 🧭 **只认下发的任务**：遍历以活动实际返回的 `tasks[]` 为准，本地 spec 里未下发的任务打印 `⏭️ 未下发/已下线` 并跳过；读取失败（HTTP 非 200、业务码非 0）会打印 `⚠️ 活动任务读取失败`，401/500 不再静默变成「活动已结束」。
+> 📱 **`app` 判据是「真会话」不是「事件」**：手机端 App 走的是 agentos 云端会话，判据看会话有没有真跑完一轮对话。所以脚本按 App 身份头（`X-Client-Product: workbuddy-app`）建会话，再用一次 `POST {boxUrl}/acp/bootstrap` 把 `initialize + session/new + session/prompt` 一起提交，只认结构化 `stopReason=end_turn`——`POST /v2/as/conversations/` → bootstrap → `claim`，全程 4 个请求、prompt 只发「你只需要回复"Hi"」。请求启用 TLS 证书校验，sandbox host 限定官方域。补发埋点（`app_login` / `chat_request_send`）、网页会话、真机 APK 事件层复刻都不计数。
+> 🖇️ **灵感判据认产物目录名**：`desktop_same` 只认桌面域一条 `playbook_prompt_send`，且 `id` 必须是 `cnb-content-calendar`（注册表 slug `content-calendar`、中文名都不计数），5 秒内到账；无需真跑桌面端、无需同机登录。
+
 ### 🎮 互动玩法（8 项）
 
 抽奖 · 盲盒 · Buddy 信息 · 派猫猫旅行 · 连签兑换 · 补签卡 · 礼包补偿 · 徽章
 
 > 🔁 **连登管家**：固定按「补签 → 档位兑换 → 抽奖」执行，兑换新增的抽奖次数会在同一轮用完。
 >
-> 🐾 **猫猫旅行**：到达后用服务端 `record_id` 领奖，回执含实际 `reward_credit` 才确认到账；领奖成功会继续检查状态，满足条件时当轮直接派出下一趟。
+> 🐾 **猫猫旅行与盲盒**：任务奖励结算后，先用服务端 `record_id` 领取 `arrived` 礼物并回读确认 `idle`，再使用当前 `affordable` 开盲盒，最后按当日名额派出下一趟。旅行中、领奖失败、领取后状态未回到空闲或状态未知时都不会开盒。
 >
 > 🩹 **补签日历**：使用服务端 `today`、活动上线日和当月边界选择断点，排除 `makeup_dates` 已补日期；默认每轮只补最近一张，补签后刷新连签再执行兑换。
 >
@@ -497,13 +526,25 @@ python daily_forward.py daily.log --wx
 
 每日签到（先查 `/v2/billing/meter/checkin-activity-status`，活动期且今日未签时再调 `/v2/billing/meter/daily-checkin`）
 
+> ⏳ **分钟级补签队列**：只有签到领取明确返回 `HTTP 500 + code=10001 + “稍后重试”` 才写入本地补签状态。状态按 UID 哈希隔离，从首次失败时刻起在 **第 10 分钟、第 40 分钟**各补一次；每次先查官方签到状态，已签立即清队列。外部 cron 用 `python workbuddy_daily.py --sign-retry-only` 触发，只执行补签，不跑完整任务套件：
+>
+> ```bash
+> # 青龙本地时间；首次全流程后，9-11 点每 10 分钟检查一次补签队列
+> 0 9 * * *       task workbuddy_daily.py
+> 10-50/10 9-11 * * * task workbuddy_daily.py --sign-retry-only
+> ```
+>
+> `400 + 10001` 企业号拒绝、普通 `429`、`500 + code=10000` 或其他业务错误都不会进入该队列；每次到点尝试都有固定上限，网络异常也不会让同一轮无限重跑，不会用长 `sleep` 占住任务进程。
+>
 > 🔥 国内版签到后会补发一条 `chat_request_send` 活跃事件，并以成长热力图 `score > 0` 确认真正计分。HTTP 200 但当天仍为 0 时，默认补一次真实对话再回读；仍未计分则不写本地完成标记，下轮继续重试。
+>
+> 💤 签到回执出现 `credit_delayed=true` 时按“积分待入账”处理，不再当成缺少奖励；签到连签仍读取 `streak_days`，不会与成长热力墙的活跃连签混用。
 >
 > 🎯 专家体验任务：`WorkBuddy_Valorant` 与 `expert_use_*` 族都走真实对话、召唤和 `actual_use(mode:LOCAL)` 链；市场按职业名分页搜索后必须用 `expert_id` 精确落位，昵称和职业名分别写入 `name / expertTitle`。任务 `jump_url` 里的合法官方专家深链可安全覆盖内置 ID，未来新增的 `expert_use_*` code 也能自动解析。
 >
 > 🎁 领奖按任务进度扫描，`progress.current >= progress.target` 即补领，不依赖可能延迟或回滚的 `accept_status`。
 >
-> ✅ 签到网络失败、空回执或业务错误不再打印成“签到成功”。企业形态仍按账号 `enterpriseId` 判定；`11140 / request illegal` 单独归类为账号受限，不再冒充 Token 过期。`token_source` 只表示授权流程，不作为跳过任务的依据。
+> ✅ 签到网络失败、空回执或业务错误不再打印成“签到成功”。企业形态仍按账号 `enterpriseId` 判定；`11140` 只有在结构化业务码与明确的账号限制文案同时命中时才归类为账号受限，模型级 `rate-limiting` 不会误停账号，正文中的示例也不参与匹配。`token_source` 只表示授权流程，不作为跳过任务的依据。
 
 ---
 
@@ -511,12 +552,13 @@ python daily_forward.py daily.log --wx
 
 | 分类 | 总数 | 全自动 | 人工/不可做 |
 | :--- | :-: | :-: | :-: |
-| 成长中心任务（云端） | 22 | 22 | 0 |
+| 成长中心任务（云端） | 23 | 23 | 0 |
 | 小程序任务 | 7 | 7 | 0 |
+| 小程序活动任务 | 6 | 6 | 0 |
 | 互动玩法 | 8 | 8 | 0 |
 | 每日签到 | 1 | 1 | 0 |
 | 📦 已归档 | 3 类 | — | 开学季活动（含大转盘）· 校园日 `school_season` · 公益专家 `Expert_Philanthropy` |
-| **合计** | **38** | **38** | **0** |
+| **合计** | **45** | **45** | **0** |
 
 > ℹ️ 成长中心任务会随活动更新。脚本内置**未覆盖任务检测**：遇到没适配的新任务会在日志中明确提示。
 >
@@ -530,6 +572,7 @@ python daily_forward.py daily.log --wx
 - **🔍 未覆盖任务检测**：每次运行扫描成长任务列表，发现脚本尚未适配的新任务会打印 ⚠️ 提示，方便及时更新脚本。
 - **⏰ 任务到期预警**：读任务行的 `valid_end`，对「未完成 + 7 天内到期 / 已过期」的任务打印 ⏰ 提醒（与签到活动到期预警同一套思路）。
 - **♻️ 幂等补缺**：所有任务先查进度再执行，已完成 / 已领取直接跳过，重复运行零副作用。
+- **🔗 真实技能分享**：按 WorkBuddy 5.9.3 客户端实证链路调用 Open Platform `asset-shares/c2c/channels`，创建真实分享链接后再上报官方渠道事件；只以服务端 `1/1` 和领取回执判定成功。
 - **⏰ 智能续期**：距上次刷新 > 10 天或 AT 7 天内过期才刷新，避免无谓轮换。
 - **🔄 API 重试**：网络错误 / 5xx 自动指数退避重试 3 次；`--gap` 可调写动作间隔防频控。
 - **🎛️ 子任务开关**：`WORKBUDDY_TASKS`（白名单）/ `WORKBUDDY_SKIP_TASKS`（黑名单）可自由裁剪要执行的子任务（含玩法），被跳过的任务不会被完成也不会被领奖——适合把积分分摊到后面几个月领。
@@ -540,7 +583,7 @@ python daily_forward.py daily.log --wx
 - **🧹 网页会话收尾**：真实对话成功即 `stop`、失败再 `delete`，避免占满上游 10 条活跃会话；命中 10105 时自动清理同任务前缀的旧会话后重试。
 - **📋 进度感知**：只上报缺口数量的事件，不重复提交已完成的进度。
 - **✅ accept 双重校验**：解析接口逐任务状态 + 回读验证 + 未落账自动逐个重试（服务端存在「请求成功但未登记」的形态）。
-- **🧩 前置依赖自动补救**：accept 逐项 `message` 里解析 `prerequisite not met: <任务>`，先补跑前置任务（如首只 Buddy 领养）再重试登记，新账号不再卡在「22 项未落账」。
+- **🧩 前置依赖自动补救**：accept 逐项 `message` 里解析 `prerequisite not met: <任务>`，先补跑前置任务（如首只 Buddy 领养）再重试登记，新账号不再卡在一批任务未落账。
 - **🎯 真实会话 id**：专家/技能类任务的 `requestId` / `messageId` 取自真实对话的服务端消息 id（`cmb-` 形态），并对齐 `has_expert` / `mode: LOCAL` 口径——上游 panel 三账号实测点亮 `Expert_lighthouse`。
 - **🎁 领奖口径对齐**：连登奖励按服务端 `redemption_status` 判定档位（已领不重发请求），实物奖自动提示填写收货地址。
 - **📈 签到读数 + 到期预警**：签到后读签到活动状态，报告给出**签到连签天数 / 累计积分 / 距下一次连签奖励的天数**；距活动 `end_time` ≤7 天或活动已关闭时给出 ⚠️ 提示（避免“活动结束才发现收入断档”）。
@@ -552,7 +595,7 @@ python daily_forward.py daily.log --wx
 - **🎁 自动补领奖**：按 `progress.current >= progress.target` 扫描，已达标未领的任务会自动补领，不依赖可能延迟或回滚的 `accept_status`。
 - **📱 小程序协议对齐**：公共 base 使用 2.4.0，专家/灵感事件按官方发射点保留 2.2.8；`conversationId` 使用 UUID v4，`requestId` 使用 32 hex 毫秒前缀，不再携带项目缩写前缀。
 - **⏱️ mp 真人节奏 + accept 后回读**：对话判据逐条 45s±10s（对齐上游反作弊实测，避免「先计数后被整体回滚」）；accept 后重读真实 `target`，`target<=0` 时有界等待下发，不再按 1 猜测或冒领。
-- **🔁 瞬时错误有界重试**：每日签到 / 余额 / 用量对网络抖动与 5xx 做 2s/4s 退避重试（最多 2 次），业务错误（如「今天已签到」）不重试。
+- **🔁 瞬时错误有界重试**：每日签到 / 余额 / 用量对网络抖动与 5xx 做 2s/4s 退避重试（最多 2 次），业务错误（如「今天已签到」）不重试；只有签到 `500 + 10001 + 稍后重试` 会进入 10/40 分钟跨进程补签队列。
 - **📢 多渠道推送**：PushPlus、Bark、WxPusher、Server酱、企业微信、钉钉和**青龙面板默认通知**，配了哪个推哪个，互不影响。
   企业微信/钉钉只需一个 webhook；青龙用户连 webhook 都不用填——脚本自己从面板拿令牌调通知接口，**新版旧版都兼容**：
   · **青龙 2.18+**（不再写 auth.json）：配 `QL_CLIENT_ID` / `QL_CLIENT_SECRET`（应用授权，勾选 **system** 权限）→ `GET /open/auth/token` 换令牌 → `PUT /open/system/notify`；
@@ -608,7 +651,7 @@ python daily_forward.py daily.log --wx
    ✅ 全部完成！
 
 📊 ══ 总计 ══
-👥 共2个账号，任务完成 37/38 项
+👥 共2个账号，任务完成 38/39 项
 
    · 桌面端对话（1个账号待完成）
    · 尝鲜热门技能（1个账号待完成）
@@ -660,9 +703,10 @@ available for personal users」（2026-10-07 实测口径）。脚本会**自动
 ---
 
 ## 📦 版本与发布
+- **当前发布版**：`v49`（2026-11-13，小程序活动任务自动化）· **脚本版本**：`v3.48`（补齐 `app` 任务）
 
 - **每次更新单独发一个 Release**：编号 `v1` → `v2` → `v3` …依次递增，**历史版本保留可下载，不覆盖、不合并**（方便回看与回退）
-- **当前脚本版本**：`v3.36`（Release `v36`）
+
 - Release 标题括号里是**脚本自身的版本号**（如 `v3（脚本 v3.3）`、`v4（脚本 v3.4）`），与文件头、日志里的版本一致
 - 每个 Release 都带完整包 zip、各脚本单文件与 `SHA256SUMS.txt` 校验文件，按需下载即可
 - 下载页：<https://github.com/L0NE-6/WorkBuddy-Daily/releases>；青龙 / Actions 想固定版本就下对应 Release 的资产，想跟最新就用仓库 `main`
