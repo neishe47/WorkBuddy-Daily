@@ -6,11 +6,11 @@
 
 **WorkBuddy 成长中心 · 全能签到脚本 · 单文件自包含（含国际版每日活跃）**
 
-> 当前版本：**v49**（2026-11-13） · 最新更新：App 任务纯 Python 自动化、SSE/TLS/领取回读与隐私加固
+> 当前版本：**v50**（2026-11-13） · 最新更新：修复任务有效期提醒误报，并补充活动任务下发判定说明
 
 [简体中文](README.md) · [English](docs/README.en.md) · [繁體中文](docs/README.zh-Hant.md) · [日本語](docs/README.ja.md) · [한국어](docs/README.ko.md) · [Português (BR)](docs/README.pt-BR.md)
 
-🔐 Token 永续 · ✅ 39 项自动化 · 📱 小程序链式任务 · 🖥️ 桌面换血 · 🎮 8 项玩法 · 💰 三类查询 · 🎁 自动领奖 · 📊 全中文报告 · 📢 多渠道推送 · 🐧 青龙友好 · ☁️ GitHub Actions
+🔐 Token 永续 · ✅ 45 项自动化 · 📱 小程序链式任务 · 🖥️ 桌面换血 · 🎮 8 项玩法 · 💰 三类查询 · 🎁 自动领奖 · 📊 全中文报告 · 📢 多渠道推送 · 🐧 青龙友好 · ☁️ GitHub Actions
 
 <img src="https://img.shields.io/github/v/release/L0NE-6/WorkBuddy-Daily?style=for-the-badge&label=Release&color=2ea44f&logo=github" />
 <img src="https://img.shields.io/github/stars/L0NE-6/WorkBuddy-Daily?style=for-the-badge&label=Stars&color=FFC75F&logo=github" />
@@ -453,7 +453,7 @@ python daily_forward.py daily.log --wx
 
 > 🔗 **前置条件**：`first_buddy`（领取Buddy）是其余云端任务的登记前置——服务端对**没有 Buddy 实例**的账号会拒绝这些任务的 accept（`prerequisite not met: first_buddy (no buddy instance)`）。脚本已把领养链路提到云端任务最前面，并在 accept 报前置错误时**自动补跑前置再重试登记**。
 >
-> ⏳ **任务有效期**：部分任务由服务端下发 `valid_start` / `valid_end`（例如 `Buddy_App_QQ` 至 **2026-10-10**、`Hp_Appearance` 至 2026-11-02、`Expert_lighthouse` 至 2026-11-13、四个 `expert_use_*` 至 **2026-11-20**），过期后不再能领取。脚本每次运行会读取任务行并做两件事：`locked=true`（未到上线时间）直接跳过并给出解锁日；**未完成且 7 天内到期 / 已过期**的任务打印 ⏰ 提醒，避免白白错过奖励。
+> ⏳ **任务有效期**：部分任务由服务端下发 `valid_start` / `valid_end`（例如 `Buddy_App_QQ` 至 **2026-10-10**、`Hp_Appearance` 至 2026-11-02、`Expert_lighthouse` 至 2026-11-13、四个 `expert_use_*` 至 **2026-11-20**），过期后不再能领取。脚本每次运行会读取任务行并做两件事：`locked=true`（未到上线时间）直接跳过并给出解锁日；最终补领后按**终态未完成/未领奖**（不含 `claimed`、`claimed=true` 和本轮已确认领奖回执）检查 7 天内到期 / 已过期任务并打印 ⏰ 提醒，避免用开跑前快照误报。
 >
 > 🔎 **三源任务发现**：桌面 `/v2/activity/growth/tasks`、小程序 `/v2`、等级族无 `/v2` 的 `/activity/growth/tasks` 并不互为超集。脚本每次合并三套清单；`first_chat / skill_installed / wechat_linked / expert_summoned / template_used` 只发现和分类，其中微信绑定明确标记为客户端操作。
 
@@ -493,6 +493,8 @@ python daily_forward.py daily.log --wx
 
 小程序原生活动页（`campaign_starbucks_2026` / `campaign_reporter_2026`）的任务不走成长中心，判据在活动域 `https://www.codebuddy.cn/portal/activity/*`，**完成≠到账，必须再调 `claim`**。
 
+> ⚠️ **活动下发判定**：`campaign_*` 活动码**不会**出现在成长中心任务清单（`GET /v2/activity/growth/tasks`）里。活动是否下发只以 `GET /portal/activity/tasks?activity_code=<活动码>` 返回的 `tasks[]` 为准；不要用成长中心清单判断本组任务是否上线。
+
 | 活动 | 任务 | 奖励 | 判定依据 |
 | :--- | :--- | :-: | :--- |
 | 星巴克协作 | `ai_chat` 与 AI 对话 3 次 | 100 | mp `chat_request_send` × 剩余次数 |
@@ -506,7 +508,7 @@ python daily_forward.py daily.log --wx
 > 🖼️ **页面上下文**：判据信封会并入真机埋点的 `pageURL` / `pageName`（`subpackages/secondary/starbucks-activity-428/index` / `subpackages/journalist-benefit/index`），与小程序端上报同形。
 > ⏳ **判据异步落库**：上报后先 3 秒快轮询两轮，未达标再走 10 秒慢轮询一轮；仍未落库只打印 `⏳ 判据延迟未落库` 留给下一轮补领，不判失败。
 > 🎁 **领奖**：`POST /portal/activity/tasks/<code>/claim?activity_code=<活动码>`，只有 claim 后**回读到该任务的 `claimed_at`** 才记 `+积分`（回读 4 秒 × 5 次）；未落库打印 `⚠️ 已提交但未回读到 claimed_at，下轮重试`，不把延迟入账误报成成功。
-> 🧭 **只认下发的任务**：遍历以活动实际返回的 `tasks[]` 为准，本地 spec 里未下发的任务打印 `⏭️ 未下发/已下线` 并跳过；读取失败（HTTP 非 200、业务码非 0）会打印 `⚠️ 活动任务读取失败`，401/500 不再静默变成「活动已结束」。
+> 🧭 **只认下发的任务**：遍历以活动实际返回的 `tasks[]` 为准，本地 spec 里未下发的任务打印 `⏭️ 未下发/已下线` 并跳过；读取失败（HTTP 非 200、业务码非 0）会先打印 `⚠️ 活动任务读取失败`。排查时请以这条读取失败告警为准，不要把后续未下发/已结束文案单独当作活动真实为空的证据。
 > 📱 **`app` 判据是「真会话」不是「事件」**：手机端 App 走的是 agentos 云端会话，判据看会话有没有真跑完一轮对话。所以脚本按 App 身份头（`X-Client-Product: workbuddy-app`）建会话，再用一次 `POST {boxUrl}/acp/bootstrap` 把 `initialize + session/new + session/prompt` 一起提交，只认结构化 `stopReason=end_turn`——`POST /v2/as/conversations/` → bootstrap → `claim`，全程 4 个请求、prompt 只发「你只需要回复"Hi"」。请求启用 TLS 证书校验，sandbox host 限定官方域。补发埋点（`app_login` / `chat_request_send`）、网页会话、真机 APK 事件层复刻都不计数。
 > 🖇️ **灵感判据认产物目录名**：`desktop_same` 只认桌面域一条 `playbook_prompt_send`，且 `id` 必须是 `cnb-content-calendar`（注册表 slug `content-calendar`、中文名都不计数），5 秒内到账；无需真跑桌面端、无需同机登录。
 
@@ -570,7 +572,7 @@ python daily_forward.py daily.log --wx
 
 - **📊 全中文报告**：任务代码自动翻译成中文（如 `skill_1` → 尝鲜热门技能），每账号独立分块 + 总计 + 待办分布，一目了然。
 - **🔍 未覆盖任务检测**：每次运行扫描成长任务列表，发现脚本尚未适配的新任务会打印 ⚠️ 提示，方便及时更新脚本。
-- **⏰ 任务到期预警**：读任务行的 `valid_end`，对「未完成 + 7 天内到期 / 已过期」的任务打印 ⏰ 提醒（与签到活动到期预警同一套思路）。
+- **⏰ 任务到期预警**：读最终补领后的任务行 `valid_end`，对「未完成/未领奖 + 7 天内到期 / 已过期」的任务打印 ⏰ 提醒，并与推送完成度共用同一份终态数据。
 - **♻️ 幂等补缺**：所有任务先查进度再执行，已完成 / 已领取直接跳过，重复运行零副作用。
 - **🔗 真实技能分享**：按 WorkBuddy 5.9.3 客户端实证链路调用 Open Platform `asset-shares/c2c/channels`，创建真实分享链接后再上报官方渠道事件；只以服务端 `1/1` 和领取回执判定成功。
 - **⏰ 智能续期**：距上次刷新 > 10 天或 AT 7 天内过期才刷新，避免无谓轮换。
@@ -703,7 +705,7 @@ available for personal users」（2026-10-07 实测口径）。脚本会**自动
 ---
 
 ## 📦 版本与发布
-- **当前发布版**：`v49`（2026-11-13，小程序活动任务自动化）· **脚本版本**：`v3.48`（补齐 `app` 任务）
+- **当前发布版**：`v50`（2026-11-13，终态有效期提醒修复）· **脚本版本**：`v3.49`（修复误报并补活动下发说明）
 
 - **每次更新单独发一个 Release**：编号 `v1` → `v2` → `v3` …依次递增，**历史版本保留可下载，不覆盖、不合并**（方便回看与回退）
 
